@@ -14,6 +14,64 @@ print(f"Observation space: {env.observation_space}")
 print(f"Action space: {env.action_space}")
 print(f"Actions: 0=Stand, 1=Hit")
 
+# recursive function that plays the hand
+def play_hand(current_state):
+    action, index =  ('Hit', 0) if q_dict[current_state][0] > q_dict[current_state][1] else ('Stand', 1)
+    next_state, reward, terminated, truncated, info = env.step(action)
+    #base case
+    if (terminated or truncated):
+        # target = r + y · Q(s', a') = r
+        # error = target - Q(s, a) = r - Q(s, a)
+        # Q(s, a) = Q(s, a) + lr * error = Q(s, a) + lr * (r - Q(s, a))
+        q_dict[current_state][index] += learning_rate * (reward - q_dict[current_state][index])
+        if reward == 1:
+            wins += 1
+        elif reward == -1:
+            losses += 1
+        else:
+            draws += 1
+        return q_dict[current_state][index]
+    else:
+        # target = r + y · Q(s', a') = Q(s', a')
+        # error = target - Q(s, a) = Q(s', a') - Q(s, a)
+        # Q(s, a) = Q(s, a) + lr * error = Q(s, a) + lr * (Q(s', a') - Q(s, a))
+        q_dict[current_state][index] += learning_rate * (play_hand(next_state) - q_dict[current_state][index])
+        return q_dict[current_state][index]
+    
+#Evaluation
+def evaluate_policy(env, policy_fn, n_episodes=100000):
+    """
+    Evaluate a policy over many episodes.
+    
+    Args:
+        env: Gymnasium environment
+        policy_fn: Function that takes a state and returns an action
+        n_episodes: Number of episodes to simulate
+    
+    Returns:
+        win_rate, draw_rate, lose_rate
+    """
+    wins, draws, losses = 0, 0, 0
+    
+    for _ in range(n_episodes):
+        state, _ = env.reset()
+        done = False
+        
+        while not done:
+            action = policy_fn(state)
+            state, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+        
+        if reward > 0:
+            wins += 1
+        elif reward == 0:
+            draws += 1
+        else:
+            losses += 1
+    
+    return wins / n_episodes, draws / n_episodes, losses / n_episodes
+
+
 # Play a few sample episodes manually to understand the environment
 print("=== Sample Episodes ===")
 
@@ -41,38 +99,7 @@ for episode in range(5):
     result = 'Win' if reward > 0 else ('Draw' if reward == 0 else 'Lose')
     print(f"  Result: {result}")
 
-    def evaluate_policy(env, policy_fn, n_episodes=100000):
-        """
-        Evaluate a policy over many episodes.
-        
-        Args:
-            env: Gymnasium environment
-            policy_fn: Function that takes a state and returns an action
-            n_episodes: Number of episodes to simulate
-        
-        Returns:
-            win_rate, draw_rate, lose_rate
-        """
-        wins, draws, losses = 0, 0, 0
-        
-        for _ in range(n_episodes):
-            state, _ = env.reset()
-            done = False
-            
-            while not done:
-                action = policy_fn(state)
-                state, reward, terminated, truncated, _ = env.step(action)
-                done = terminated or truncated
-            
-            if reward > 0:
-                wins += 1
-            elif reward == 0:
-                draws += 1
-            else:
-                losses += 1
-        
-        return wins / n_episodes, draws / n_episodes, losses / n_episodes
-
+    
 
 # Random policy
 random_policy = lambda state: env.action_space.sample()
@@ -122,7 +149,7 @@ q_dict = {} # keys: (psum, dsum, ace), Values: [q_hit, q_stand]
 
 print(f"Training with learning rate: {learning_rate}, epsilon: {epsilon} for {epochs} iterations")
 
-for i in epochs:
+for i in range(epochs):
     if i % 50 == 0:
         print(f"Iteration: {i}")
     # get state
@@ -134,27 +161,5 @@ for i in epochs:
 
     play_hand()
 
-    # recursive function that plays the hand
-    def play_hand(current_state):
-        action, index =  ('Hit', 0) if q_dict[current_state][0] > q_dict[current_state][1] else ('Stand', 1)
-        next_state, reward, terminated, truncated, info = env.step(action)
-        #base case
-        if (terminated or truncated):
-            # target = r + y · Q(s', a') = r
-            # error = target - Q(s, a) = r - Q(s, a)
-            # Q(s, a) = Q(s, a) + lr * error = Q(s, a) + lr * (r - Q(s, a))
-            q_dict[current_state][index] += learning_rate * (reward - q_dict[current_state][index])
-            if reward == 1:
-                wins += 1
-            elif reward == -1:
-                losses += 1
-            else:
-                draws += 1
-            return q_dict[current_state][index]
-        else:
-            # target = r + y · Q(s', a') = Q(s', a')
-            # error = target - Q(s, a) = Q(s', a') - Q(s, a)
-            # Q(s, a) = Q(s, a) + lr * error = Q(s, a) + lr * (Q(s', a') - Q(s, a))
-            q_dict[current_state][index] += learning_rate * (play_hand(next_state) - q_dict[current_state][index])
-            return q_dict[current_state][index]
+    
 
