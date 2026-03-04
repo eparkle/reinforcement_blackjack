@@ -144,6 +144,12 @@ for i in epochs:
             # error = target - Q(s, a) = r - Q(s, a)
             # Q(s, a) = Q(s, a) + lr * error = Q(s, a) + lr * (r - Q(s, a))
             q_dict[current_state][index] += learning_rate * (reward - q_dict[current_state][index])
+            if reward == 1:
+                wins += 1
+            elif reward == -1:
+                losses += 1
+            else:
+                draws += 1
             return q_dict[current_state][index]
         else:
             # target = r + y · Q(s', a') = Q(s', a')
