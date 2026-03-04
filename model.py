@@ -132,18 +132,23 @@ for i in epochs:
     if (player_sum, dealer_sum, usable_ace) not in q_dict:
         q_dict[(player_sum, dealer_sum, usable_ace)] = [0, 0]
 
-    
-
     play_hand()
 
     # recursive function that plays the hand
     def play_hand(current_state):
-        action =  'Hit' if q_dict[current_state][0] > q_dict[current_state][1] else 'Stand'
+        action, index =  ('Hit', 0) if q_dict[current_state][0] > q_dict[current_state][1] else ('Stand', 1)
         next_state, reward, terminated, truncated, info = env.step(action)
+        #base case
         if (terminated or truncated):
-            
-            return reward
+            # target = r + y · Q(s', a') = r
+            # error = target - Q(s, a) = r - Q(s, a)
+            # Q(s, a) = Q(s, a) + lr * error = Q(s, a) + lr * (r - Q(s, a))
+            q_dict[current_state][index] += learning_rate * (reward - q_dict[current_state][index])
+            return q_dict[current_state][index]
         else:
-            return play_hand(next_state)
-
+            # target = r + y · Q(s', a') = Q(s', a')
+            # error = target - Q(s, a) = Q(s', a') - Q(s, a)
+            # Q(s, a) = Q(s, a) + lr * error = Q(s, a) + lr * (Q(s', a') - Q(s, a))
+            q_dict[current_state][index] += learning_rate * (play_hand(next_state) - q_dict[current_state][index])
+            return q_dict[current_state][index]
 
