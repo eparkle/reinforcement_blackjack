@@ -90,12 +90,15 @@ draws = 0
 q_dict = defaultdict(lambda: [0.0, 0.0]) # keys: (psum, dsum, ace), Values: [q_hit, q_stand]
 
 print(f"Training with learning rate: {learning_rate}, epsilon: {epsilon} for {epochs} iterations")
-
+win_rates = []
+iterations = []
+interval = 10000   # how often to record performance
 for i in range(epochs):
     if i % 200 == 0:
         print(f"Iteration: {i}")
     # get state
     state, info = env.reset()
+    explore = rand.uniform(0.0, 1.0)
     player_sum, dealer_sum, usable_ace = state[0], state[1], state[2]
     # if state not seen before initialize with zeros
     if (player_sum, dealer_sum, usable_ace) not in q_dict:
@@ -108,5 +111,16 @@ for i in range(epochs):
         play_q_hand(state) # exploit
     epsilon -= epsilon_update
 
+    if i % interval == 0 and i > 0:
+        total_games = wins + losses + draws
+        win_rate = wins / total_games
+        win_rates.append(win_rate)
+        iterations.append(i)
+
 print(wins, losses, draws)
+plt.plot(iterations, win_rates)
+plt.xlabel("Training Iterations")
+plt.ylabel("Win Rate")
+plt.title("Blackjack AI Learning Curve")
+plt.show()
 
