@@ -78,8 +78,9 @@ Formulas:
 #hyperparams
 learning_rate = 0.01
 epsilon = 1.0
-epochs = 5000000
-epsilon_update = epsilon / epochs
+epsilon_min = 0.05
+epochs = 1000000
+epsilon_update = 0.9995
 
 #results
 wins = 0
@@ -98,7 +99,6 @@ for i in range(epochs):
         print(f"Iteration: {i}")
     # get state
     state, info = env.reset()
-    explore = rand.uniform(0.0, 1.0)
     player_sum, dealer_sum, usable_ace = state[0], state[1], state[2]
     # if state not seen before initialize with zeros
     if (player_sum, dealer_sum, usable_ace) not in q_dict:
@@ -109,7 +109,8 @@ for i in range(epochs):
         play_epsilon_hand(state)  # explore
     else:
         play_q_hand(state) # exploit
-    epsilon -= epsilon_update
+    if epsilon > epsilon_min:
+        epsilon *= epsilon_update
 
     if i % interval == 0 and i > 0:
         total_games = wins + losses + draws
@@ -123,4 +124,3 @@ plt.xlabel("Training Iterations")
 plt.ylabel("Win Rate")
 plt.title("Blackjack AI Learning Curve")
 plt.show()
-
