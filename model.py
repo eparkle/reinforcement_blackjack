@@ -89,7 +89,28 @@ draws = 0
 
 #table
 q_dict = defaultdict(lambda: [0.0, 0.0]) # keys: (psum, dsum, ace), Values: [q_hit, q_stand]
+def evaluate_random_agent(num_games=100000):
+    wins = 0
+    losses = 0
+    draws = 0
 
+    for _ in range(num_games):
+        state, info = env.reset()
+
+        while True:
+            action = rand.randint(0,1)
+            state, reward, terminated, truncated, info = env.step(action)
+
+            if terminated or truncated:
+                if reward == 1:
+                    wins += 1
+                elif reward == -1:
+                    losses += 1
+                else:
+                    draws += 1
+                break
+
+    return wins, losses, draws
 print(f"Training with learning rate: {learning_rate}, epsilon: {epsilon} for {epochs} iterations")
 win_rates = []
 iterations = []
@@ -118,9 +139,16 @@ for i in range(epochs):
         win_rates.append(win_rate)
         iterations.append(i)
 
-print(wins, losses, draws)
-plt.plot(iterations, win_rates)
+
+
+# Evaluate lower limit
+rand_wins, rand_losses, rand_draws = evaluate_random_agent(100000)
+random_win_rate = rand_wins / (rand_wins + rand_losses)
+plt.plot(iterations, win_rates, label="Trained AI")
+plt.axhline(y=random_win_rate, linestyle='--', label="Random Baseline")
+
 plt.xlabel("Training Iterations")
 plt.ylabel("Win Rate")
-plt.title("Blackjack AI Learning Curve")
+plt.title("Blackjack AI vs Lower Limit")
+plt.legend()
 plt.show()
